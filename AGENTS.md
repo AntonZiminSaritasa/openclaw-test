@@ -1,12 +1,12 @@
 ## Program: OpenClaw Email Workflow
 
-**Authority:** Read Gmail labels, create Trello cards, set Trello card priority, send Slack messages
+**Authority:** Read Gmail labels, create Trello cards, set Trello card priority
 
 **Trigger:** Every 5 minutes via cron (see `setup.sh`)
 
 **Approval gate:** None — fully automated
 
-**Escalation:** Stop and report if any external API (Gmail, Trello, Slack) returns an error; do not retry silently
+**Escalation:** Stop and report if any external API (Gmail, Trello) returns an error; do not retry silently
 
 ### Execution steps
 
@@ -21,9 +21,6 @@
    2. Check whether the email subject or body contains the word **URGENT** or **IMPORTANT** (case-insensitive)
    3. If either keyword is present:
       - Set the Trello card priority to **High**
-      - Send a Slack message to the configured channel:
-        - Include the email subject
-        - State that the message is high-priority
 3. Mark each processed email as read in Gmail using:
    ```
    gog gmail mark-read <MESSAGE_ID>
@@ -33,6 +30,5 @@
 ### What NOT to do
 
 - Do not delete or archive emails in Gmail
-- Do not send a Slack message for emails whose subject and body both contain neither URGENT nor IMPORTANT
 - Do not create a Trello card more than once for the same email
 - Do not skip the Gmail read-marking step — skipping it causes duplicate processing
