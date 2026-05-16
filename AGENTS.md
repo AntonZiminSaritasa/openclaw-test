@@ -10,7 +10,10 @@
 
 ### Execution steps
 
-1. Fetch all unread emails from Gmail that have the label **OpenClaw**
+1. Search Gmail for unread emails with the label **OpenClaw** using:
+   ```
+   gog gmail search 'is:unread label:OpenClaw'
+   ```
 2. For each email:
    1. Create a new Trello card on the configured board:
       - Title: email subject
@@ -21,7 +24,11 @@
       - Send a Slack message to the configured channel:
         - Include the email subject
         - State that the message is high-priority
-3. Mark each processed email as read in Gmail so it is not processed again on the next run
+3. Mark each processed email as read in Gmail using:
+   ```
+   gog gmail mark-read <MESSAGE_ID>
+   ```
+   so it is not matched by the search query on the next run
 
 ### What NOT to do
 
