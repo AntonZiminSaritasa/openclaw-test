@@ -1,9 +1,8 @@
 #!/usr/bin/env sh
-# Registers the Lobster Email Workflow cron job.
+# Registers the OpenClaw Email Workflow cron job via Lobster.
 # Run once after cloning: sh lobster-setup.sh
 
 lobster cron add \
-  --name "lobster-email-workflow" \
+  --name "openclaw-email-workflow" \
   --every "5m" \
-  --session isolated \
-  --message "Run the Lobster Email Workflow program"
+  --file openclaw-email-workflow.lobster
