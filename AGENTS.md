@@ -15,7 +15,7 @@
    gog gmail search 'is:unread label:OpenClaw'
    ```
 2. For each email:
-   1. Create a new Trello card on the configured board:
+   1. Create a new Trello card in list `6a07d17e4bee5f19d8590a32`:
       - Title: email subject
       - Description: email body
    2. Check whether the email body contains the word **URGENT** or **IMPORTANT** (case-insensitive)
