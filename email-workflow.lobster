@@ -4,27 +4,44 @@ args:
     default: "6a07f96eab21b6db18fffb33"
   gmail_label:
     default: "OpenClaw"
+env:
+  TRELLO_KEY: $TRELLO_KEY
+  TRELLO_TOKEN: $TRELLO_TOKEN
 steps:
   - id: search
     command: gog gmail search 'is:unread label:$gmail_label' --json
 
-  - id: create_cards
-    run: trello
-    input: |
-      For each email in the input JSON, create a Trello card in list $trello_list_id
-      with the email subject as the title and the email body as the description.
-      Return JSON mapping each email message_id to the created card id.
-    stdin: $search.json
+  - id: process_emails
+    command: |
+      jq -c '.emails[]' | while read -r email; do
+        msg_id=$(echo "$email" | jq -r '.message_id')
+        subject=$(echo "$email" | jq -r '.subject')
+        body=$(echo "$email" | jq -r '.body')
 
-  - id: flag_priority
-    run: trello
-    input: |
-      For each (email, card) pair in the input JSON, if the email subject OR body
-      contains the word "URGENT" or "IMPORTANT" (case-insensitive), set that
-      Trello card's priority to High.
-    stdin: $create_cards.json
+        card=$(curl -sS -X POST "https://api.trello.com/1/cards" \
+          --data-urlencode "idList=$trello_list_id" \
+          --data-urlencode "name=$subject" \
+          --data-urlencode "desc=$body" \
+          --data-urlencode "key=$TRELLO_KEY" \
+          --data-urlencode "token=$TRELLO_TOKEN")
+        card_id=$(echo "$card" | jq -r '.id')
+
+        if echo "$subject $body" | grep -Eiq '(URGENT|IMPORTANT)'; then
+          curl -sS -X POST "https://api.trello.com/1/cards/$card_id/labels" \
+            --data-urlencode "name=High" \
+            --data-urlencode "color=red" \
+            --data-urlencode "key=$TRELLO_KEY" \
+            --data-urlencode "token=$TRELLO_TOKEN" >/dev/null
+        fi
+
+        jq -nc --arg mid "$msg_id" --arg cid "$card_id" '{message_id: $mid, card_id: $cid}'
+      done | jq -s '{processed: .}'
+    stdin: $search.json
 
   - id: mark_read
-    command: gog gmail mark-read --from-json
-    stdin: $search.json
-    condition: $create_cards.success
+    command: |
+      jq -r '.processed[].message_id' | while read -r mid; do
+        gog gmail mark-read "$mid"
+      done
+    stdin: $process_emails.json
+    condition: $process_emails.success
