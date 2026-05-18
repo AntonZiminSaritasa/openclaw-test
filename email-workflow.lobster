@@ -9,7 +9,7 @@ args:
 
 steps:
   - id: fetch_emails
-    command: gog gmail search 'is:unread label:OpenClaw' --json
+    command: gog gmail search "is:unread label:${LOBSTER_ARG_GMAIL_LABEL}" --json
 
   - id: fetch_email_bodies
     command: |-
@@ -52,7 +52,7 @@ steps:
 
       const data = JSON.parse(fs.readFileSync(0, 'utf8'));
       const emails = Array.isArray(data) ? data : [data];
-      const listId = process.env.TRELLO_LIST_ID;
+      const listId = process.env.LOBSTER_ARG_TRELLO_LIST_ID;
       const apiKey = process.env.TRELLO_API_KEY;
       const token = process.env.TRELLO_TOKEN;
 
@@ -124,7 +124,7 @@ steps:
       });
       EOF
 
-      TRELLO_LIST_ID="6a07f96eab21b6db18fffb33" node /tmp/process-emails.js
+      node /tmp/process-emails.js
     stdin: $fetch_email_bodies.stdout
 
   - id: mark_high_priority
