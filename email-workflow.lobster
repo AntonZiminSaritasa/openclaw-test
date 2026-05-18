@@ -114,6 +114,7 @@ steps:
             cardUrl: card.url
           });
         }
+        fs.writeFileSync('/tmp/process-emails.log', JSON.stringify(results, null, 2));
         console.log(JSON.stringify(results));
       }
 
@@ -135,13 +136,12 @@ steps:
       const results = JSON.parse(fs.readFileSync(0, 'utf8'));
       const apiKey = process.env.TRELLO_API_KEY;
       const token = process.env.TRELLO_TOKEN;
-      const slackWebhook = process.env.SLACK_WEBHOOK_URL;
 
-      async function putRequest(url, body) {
+      async function postRequest(url, body) {
         return new Promise((resolve, reject) => {
           const postData = new URLSearchParams(body).toString();
           const req = https.request(url, {
-            method: 'PUT',
+            method: 'POST',
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
               'Content-Length': Buffer.byteLength(postData)
@@ -149,7 +149,16 @@ steps:
           }, (res) => {
             let responseData = '';
             res.on('data', chunk => responseData += chunk);
-            res.on('end', () => resolve(responseData));
+            res.on('end', () => {
+              if (res.statusCode < 200 || res.statusCode >= 300) {
+                return reject(new Error(`HTTP ${res.statusCode} from ${url}: ${responseData}`));
+              }
+              try {
+                resolve(JSON.parse(responseData));
+              } catch(e) {
+                reject(new Error(`Failed to parse response: ${responseData}`));
+              }
+            });
           });
           req.on('error', reject);
           req.write(postData);
@@ -162,16 +171,18 @@ steps:
 
         for (const card of highPriorityCards) {
           try {
-            await putRequest(
-              `https://api.trello.com/1/cards/${card.cardId}?key=${apiKey}&token=${token}`,
-              { idLabels: 'priority-high' }
+            await postRequest(
+              `https://api.trello.com/1/cards/${card.cardId}/labels?key=${apiKey}&token=${token}`,
+              { name: 'High', color: 'red' }
             );
           } catch(err) {
-            console.error(`Failed to set priority for card: ${card.cardId}`, err);
+            throw new Error(`Failed to set High priority on card ${card.cardId}: ${err.message}`);
           }
         }
 
-        console.log(JSON.stringify({ processed: highPriorityCards.length, total: results.length }));
+        const summary = { processed: highPriorityCards.length, total: results.length };
+        fs.writeFileSync('/tmp/set-priority.log', JSON.stringify(summary, null, 2));
+        console.log(JSON.stringify(summary));
       }
 
       processHighPriority().catch(err => {
