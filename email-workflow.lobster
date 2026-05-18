@@ -107,7 +107,6 @@ steps:
               cardUrl: card.url
             });
           } catch(err) {
-            console.log(err);
             console.error(`Failed to create card for email: ${subject}`, err);
           }
         }
@@ -122,6 +121,9 @@ steps:
 
       TRELLO_LIST_ID="6a07f96eab21b6db18fffb33" node /tmp/process-emails.js
     stdin: $fetch_email_bodies.stdout
+    env:
+      TRELLO_API_KEY: ${TRELLO_API_KEY}
+      TRELLO_TOKEN: ${TRELLO_TOKEN}
 
   - id: mark_high_priority
     command: |-
