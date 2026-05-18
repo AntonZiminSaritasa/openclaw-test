@@ -215,20 +215,21 @@ steps:
         process.exit(0);
       }
 
-      try {
-        // Use gog to mark as read
-        for (const id of emailIds) {
-          try {
-            execSync(`gog gmail mark-read --message-id ${id}`, { stdio: 'ignore' });
-          } catch(e) {
-            console.error(`Failed to mark ${id} as read`);
-          }
+      let markedRead = 0;
+      for (const id of emailIds) {
+        try {
+          execSync(`gog gmail mark-read ${id}`, { stdio: ['ignore', 'pipe', 'pipe'] });
+          markedRead++;
+        } catch(e) {
+          const stderr = (e.stderr && e.stderr.toString()) || '';
+          const stdout = (e.stdout && e.stdout.toString()) || '';
+          throw new Error(`gog gmail mark-read ${id} failed (exit ${e.status}): ${stderr || stdout || e.message}`);
         }
-        console.log(JSON.stringify({ markedRead: emailIds.length }));
-      } catch(err) {
-        console.error('Error marking emails as read:', err);
-        process.exit(1);
       }
+
+      const summary = { markedRead };
+      fs.writeFileSync('/tmp/mark-read.log', JSON.stringify(summary, null, 2));
+      console.log(JSON.stringify(summary));
       EOF
 
       node /tmp/mark-read.js
