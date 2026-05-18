@@ -69,6 +69,9 @@ steps:
             let responseData = '';
             res.on('data', chunk => responseData += chunk);
             res.on('end', () => {
+              if (res.statusCode < 200 || res.statusCode >= 300) {
+                return reject(new Error(`HTTP ${res.statusCode} from ${url}: ${responseData}`));
+              }
               try {
                 resolve(JSON.parse(responseData));
               } catch(e) {
@@ -89,8 +92,9 @@ steps:
           const body = email.snippet || email.body || '';
           const isHighPriority = /URGENT|IMPORTANT/i.test(subject + ' ' + body);
 
+          let card;
           try {
-            const card = await postRequest(
+            card = await postRequest(
               `https://api.trello.com/1/cards?key=${apiKey}&token=${token}`,
               {
                 idList: listId,
@@ -98,17 +102,17 @@ steps:
                 desc: body.substring(0, 4096)
               }
             );
-
-            results.push({
-              emailId: email.id,
-              subject: subject,
-              highPriority: isHighPriority,
-              cardId: card.id,
-              cardUrl: card.url
-            });
           } catch(err) {
-            console.error(`Failed to create card for email: ${subject}`, err);
+            throw new Error(`Failed to create Trello card for email "${subject}" (id=${email.id}): ${err.message}`);
           }
+
+          results.push({
+            emailId: email.id,
+            subject: subject,
+            highPriority: isHighPriority,
+            cardId: card.id,
+            cardUrl: card.url
+          });
         }
         console.log(JSON.stringify(results));
       }
