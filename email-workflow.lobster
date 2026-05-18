@@ -11,6 +11,39 @@ steps:
   - id: fetch_emails
     command: gog gmail search 'is:unread label:OpenClaw' --json
 
+  - id: fetch_email_bodies
+    command: |-
+      cat > /tmp/fetch-bodies.js << 'EOF'
+      const fs = require('fs');
+      const { execSync } = require('child_process');
+
+      const data = JSON.parse(fs.readFileSync(0, 'utf8'));
+      const threads = Array.isArray(data) ? data : (data.threads || []);
+      const emails = [];
+
+      for (const t of threads) {
+        if (!t || !t.id) continue;
+        try {
+          const raw = execSync(`gog gmail get ${t.id} --json`, { encoding: 'utf8' });
+          const full = JSON.parse(raw);
+          emails.push({
+            id: t.id,
+            subject: (full.headers && full.headers.subject) || t.subject || '(No Subject)',
+            body: full.body || (full.message && full.message.snippet) || '',
+            from: (full.headers && full.headers.from) || t.from || '',
+            date: (full.headers && full.headers.date) || t.date || ''
+          });
+        } catch(err) {
+          console.error(`Failed to fetch ${t.id}: ${err.message}`);
+        }
+      }
+
+      console.log(JSON.stringify(emails));
+      EOF
+
+      node /tmp/fetch-bodies.js
+    stdin: $fetch_emails.stdout
+
   - id: create_trello_cards
     command: |-
       cat > /tmp/process-emails.js << 'EOF'
@@ -88,7 +121,7 @@ steps:
       EOF
 
       TRELLO_LIST_ID="6a07f96eab21b6db18fffb33" node /tmp/process-emails.js
-    stdin: $fetch_emails.stdout
+    stdin: $fetch_email_bodies.stdout
 
   - id: mark_high_priority
     command: |-
@@ -188,4 +221,4 @@ steps:
       EOF
 
       node /tmp/mark-read.js
-    stdin: $fetch_emails.stdout
+    stdin: $fetch_email_bodies.stdout
