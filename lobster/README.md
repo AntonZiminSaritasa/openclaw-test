@@ -16,11 +16,21 @@ Per-step result JSON is written under `/tmp/*.log` for debugging.
 
 ## Run it
 
+One-off:
+
 ```sh
 lobster run email-workflow.lobster
 ```
 
 Required environment: `TRELLO_API_KEY`, `TRELLO_TOKEN`. Args `trello_list_id` and `gmail_label` have defaults but can be overridden.
+
+## Schedule it
+
+[setup.sh](setup.sh) registers a recurring job via `openclaw cron add` that runs the workflow every 5 minutes in an isolated session. Run once after cloning:
+
+```sh
+sh setup.sh
+```
 
 ## Trade-offs
 

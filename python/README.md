@@ -16,11 +16,21 @@ A single-file imperative implementation in [email_workflow.py](email_workflow.py
 
 ## Run it
 
+One-off:
+
 ```sh
 TRELLO_API_KEY=... TRELLO_TOKEN=... python3 email_workflow.py
 ```
 
-Schedule it via your preferred runner (cron, systemd timer, `openclaw cron add`, etc.).
+## Schedule it
+
+[setup.sh](setup.sh) installs a Linux `crontab` entry that runs the script every 5 minutes and appends output to `/var/log/openclaw-email-workflow.log`. Run once after cloning:
+
+```sh
+sh setup.sh
+```
+
+The script appends to the current user's crontab and is idempotent — re-running replaces any prior entry pointing at this `email_workflow.py`. `TRELLO_API_KEY` and `TRELLO_TOKEN` must be available in the environment cron inherits (e.g. exported in a shell profile cron reads, or sourced from a file by the cron line).
 
 ## Trade-offs
 
