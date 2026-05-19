@@ -1,4 +1,4 @@
-# AGENTS.md + setup.sh
+# AGENTS.md
 
 A declarative, agent-driven solution. Instead of writing imperative code, the workflow is described in natural language for an autonomous OpenClaw agent (see [AGENTS.md](AGENTS.md)). A small shell script registers it to run every 5 minutes (see [setup.sh](setup.sh)).
 
